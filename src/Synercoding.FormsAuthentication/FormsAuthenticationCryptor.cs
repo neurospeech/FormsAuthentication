@@ -1,4 +1,5 @@
-﻿using Synercoding.FormsAuthentication.Encryption;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Synercoding.FormsAuthentication.Encryption;
 using System;
 using System.IO;
 
@@ -38,13 +39,27 @@ namespace Synercoding.FormsAuthentication
             if (protectedText == null)
                 throw new ArgumentNullException(nameof(protectedText));
 
-            var bBlob = CryptoUtil.HexToBinary(protectedText);
+            FormsAuthenticationCookie _unprotect()
+            {
+                var bBlob = CryptoUtil.HexToBinary(protectedText);
 
-            var cryptoProvider = AspNetCryptoServiceProvider.GetCryptoServiceProvider(_options);
-            var cryptoService = cryptoProvider.GetCryptoService();
-            byte[] unprotectedData = cryptoService.Unprotect(bBlob);
+                var cryptoProvider = AspNetCryptoServiceProvider.GetCryptoServiceProvider(_options);
+                var cryptoService = cryptoProvider.GetCryptoService();
+                byte[] unprotectedData = cryptoService.Unprotect(bBlob);
 
-            return ConvertToAuthenticationTicket(unprotectedData);
+                return ConvertToAuthenticationTicket(unprotectedData);
+
+            }
+
+            if (_options.CacheTimeout != null)
+            {
+                return _options.Cache.GetOrCreate($"Auth-Cookie-{protectedText}", ct => {
+                    ct.SlidingExpiration = _options.CacheTimeout;
+                    return _unprotect();
+                });
+            }
+
+            return _unprotect();
         }
 
         private byte[] ConvertToBytes(FormsAuthenticationCookie data)

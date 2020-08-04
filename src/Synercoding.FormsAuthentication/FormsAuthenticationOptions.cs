@@ -1,4 +1,7 @@
-﻿namespace Synercoding.FormsAuthentication
+﻿using Microsoft.Extensions.Caching.Memory;
+using System;
+
+namespace Synercoding.FormsAuthentication
 {
     public class FormsAuthenticationOptions
     {
@@ -7,5 +10,9 @@
 
         public string DecryptionKey { get; set; }
         public string ValidationKey { get; set; }
+
+        public IMemoryCache Cache {get;set;}
+
+        public TimeSpan? CacheTimeout { get; set; }
     }
 }
